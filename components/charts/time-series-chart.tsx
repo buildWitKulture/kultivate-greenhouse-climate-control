@@ -30,39 +30,45 @@ export function TimeSeriesChart({ title, data, yAxisLabel, height = 300 }: TimeS
   })
 
   return (
-    <Card className="p-6">
-      <h3 className="mb-4 text-lg font-semibold">{title}</h3>
-      <ResponsiveContainer width="100%" height={height}>
+    <Card className="p-4 lg:p-6">
+      <h3 className="mb-3 text-base font-semibold lg:mb-4 lg:text-lg">{title}</h3>
+      <ResponsiveContainer width="100%" height={height} className="text-xs lg:text-sm">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--color-border))" />
           <XAxis
             dataKey="time"
             stroke="hsl(var(--color-muted-foreground))"
-            fontSize={12}
+            fontSize={10}
             tickLine={false}
             axisLine={false}
+            interval="preserveStartEnd"
           />
           <YAxis
             stroke="hsl(var(--color-muted-foreground))"
-            fontSize={12}
+            fontSize={10}
             tickLine={false}
             axisLine={false}
-            label={{
-              value: yAxisLabel,
-              angle: -90,
-              position: "insideLeft",
-              style: { fill: "hsl(var(--color-muted-foreground))" },
-            }}
+            label={
+              yAxisLabel
+                ? {
+                    value: yAxisLabel,
+                    angle: -90,
+                    position: "insideLeft",
+                    style: { fill: "hsl(var(--color-muted-foreground))", fontSize: 10 },
+                  }
+                : undefined
+            }
           />
           <Tooltip
             contentStyle={{
               backgroundColor: "hsl(var(--color-card))",
               border: "1px solid hsl(var(--color-border))",
               borderRadius: "8px",
+              fontSize: "12px",
             }}
             labelStyle={{ color: "hsl(var(--color-foreground))" }}
           />
-          <Legend />
+          <Legend wrapperStyle={{ fontSize: "12px" }} />
           {data.map((series) => (
             <Line
               key={series.name}

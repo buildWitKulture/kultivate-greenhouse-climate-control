@@ -43,20 +43,19 @@ export function EnvironmentalGauge({
     return "#10b981"
   }
 
-  // SVG circle parameters
-  const size = 160
-  const strokeWidth = 12
+  const size = 140 // Reduced from 160 for mobile
+  const strokeWidth = 10 // Reduced from 12
   const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
   const offset = circumference - (Math.min(percentage, 100) / 100) * circumference
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 lg:p-6">
       <div className="flex flex-col items-center">
         {/* Icon and Label */}
         <div className="mb-2 flex items-center gap-2">
           {icon}
-          <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
+          <h3 className="text-xs font-medium text-muted-foreground lg:text-sm">{label}</h3>
         </div>
 
         {/* Circular Gauge */}
@@ -88,16 +87,16 @@ export function EnvironmentalGauge({
 
           {/* Center value */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn("text-3xl font-bold", getColor())}>
+            <span className={cn("text-2xl font-bold lg:text-3xl", getColor())}>
               {value}
-              <span className="text-lg">{unit}</span>
+              <span className="text-base lg:text-lg">{unit}</span>
             </span>
           </div>
         </div>
 
         {/* Target and Range Info */}
-        <div className="mt-4 space-y-1 text-center text-sm">
-          <div className="flex items-center justify-center gap-4">
+        <div className="mt-3 space-y-1 text-center text-xs lg:mt-4 lg:text-sm">
+          <div className="flex items-center justify-center gap-2 lg:gap-4">
             <div>
               <span className="text-muted-foreground">Target: </span>
               <span className="font-medium">

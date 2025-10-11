@@ -50,19 +50,19 @@ export function StatsOverview({ zones }: StatsOverviewProps) {
   ]
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
       {stats.map((stat) => (
-        <Card key={stat.label} className="p-6">
+        <Card key={stat.label} className="p-4 lg:p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold">{stat.value}</p>
-                {stat.total && <span className="text-sm text-muted-foreground">/ {stat.total}</span>}
+              <p className="text-xs text-muted-foreground lg:text-sm">{stat.label}</p>
+              <div className="flex items-baseline gap-1 lg:gap-2">
+                <p className="text-xl font-bold lg:text-2xl">{stat.value}</p>
+                {stat.total && <span className="text-xs text-muted-foreground lg:text-sm">/ {stat.total}</span>}
               </div>
             </div>
-            <div className={`rounded-lg p-3 ${stat.bgColor}`}>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+            <div className={`rounded-lg p-2 lg:p-3 ${stat.bgColor}`}>
+              <stat.icon className={`h-4 w-4 lg:h-5 lg:w-5 ${stat.color}`} />
             </div>
           </div>
         </Card>

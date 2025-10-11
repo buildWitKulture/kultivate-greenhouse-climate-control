@@ -62,29 +62,31 @@ export function WeatherScenarios() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Scenario Selection */}
-      <Card className="p-6">
-        <div className="mb-4 flex items-center justify-between">
+      <Card className="p-4 lg:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Weather Scenarios</h3>
-            <p className="text-sm text-muted-foreground">Select or customize weather conditions for simulation</p>
+            <h3 className="text-base font-semibold lg:text-lg">Weather Scenarios</h3>
+            <p className="text-xs text-muted-foreground lg:text-sm">
+              Select or customize weather conditions for simulation
+            </p>
           </div>
-          <Badge className="border-accent/20 bg-accent/10 text-accent" variant="outline">
+          <Badge className="w-fit border-accent/20 bg-accent/10 text-accent" variant="outline">
             Custom Scenarios
           </Badge>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
           {scenarios.map((scenario) => (
             <Button
               key={scenario.id}
               variant={scenario.active ? "default" : "outline"}
-              className="h-auto flex-col items-start gap-2 p-4"
+              className="h-auto flex-col items-start gap-2 p-3 lg:p-4"
             >
-              <scenario.icon className="h-5 w-5" />
+              <scenario.icon className="h-4 w-4 lg:h-5 lg:w-5" />
               <div className="text-left">
-                <div className="font-semibold">{scenario.name}</div>
+                <div className="text-xs font-semibold lg:text-sm">{scenario.name}</div>
                 <div className="text-xs opacity-80">{scenario.description}</div>
               </div>
             </Button>
@@ -94,13 +96,21 @@ export function WeatherScenarios() {
 
       {/* Weather Data Charts */}
       <Tabs defaultValue="day" className="w-full">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Historical Weather Data</h3>
-          <TabsList>
-            <TabsTrigger value="day">Day</TabsTrigger>
-            <TabsTrigger value="3days">3 Days</TabsTrigger>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="today">Today</TabsTrigger>
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:mb-4">
+          <h3 className="text-base font-semibold lg:text-lg">Historical Weather Data</h3>
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="day" className="text-xs lg:text-sm">
+              Day
+            </TabsTrigger>
+            <TabsTrigger value="3days" className="text-xs lg:text-sm">
+              3 Days
+            </TabsTrigger>
+            <TabsTrigger value="week" className="text-xs lg:text-sm">
+              Week
+            </TabsTrigger>
+            <TabsTrigger value="today" className="text-xs lg:text-sm">
+              Today
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -152,15 +162,15 @@ export function WeatherScenarios() {
         </TabsContent>
 
         <TabsContent value="3days">
-          <p className="text-center text-muted-foreground">3-day historical data view</p>
+          <p className="text-center text-sm text-muted-foreground">3-day historical data view</p>
         </TabsContent>
 
         <TabsContent value="week">
-          <p className="text-center text-muted-foreground">Weekly historical data view</p>
+          <p className="text-center text-sm text-muted-foreground">Weekly historical data view</p>
         </TabsContent>
 
         <TabsContent value="today">
-          <p className="text-center text-muted-foreground">Today's data view</p>
+          <p className="text-center text-sm text-muted-foreground">Today's data view</p>
         </TabsContent>
       </Tabs>
     </div>
