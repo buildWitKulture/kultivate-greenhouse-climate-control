@@ -4,7 +4,7 @@ import { EnvironmentalGauge } from "@/components/zone/environmental-gauge"
 import { ControlCard } from "@/components/zone/control-card"
 import { ClimateStrategy } from "@/components/zone/climate-strategy"
 import { ZoneAnalytics } from "@/components/zone/zone-analytics"
-import { mockGreenhouseZones } from "@/lib/mock-data"
+import { mockGreenhouseZones, zonesCropTypes } from "@/lib/mock-data"
 import { notFound } from "next/navigation"
 import { Thermometer, Droplets, Wind, Lightbulb, Flame, Fan, Droplet, Sun, Blinds, Sprout } from "lucide-react"
 
@@ -14,6 +14,8 @@ export default function ZoneDetailPage({ params }: { params: { id: string } }) {
   if (!zone) {
     notFound()
   }
+
+  const cropType = zonesCropTypes[zone.id]
 
   // Determine status for each metric
   const tempStatus =
@@ -34,7 +36,7 @@ export default function ZoneDetailPage({ params }: { params: { id: string } }) {
     <AppLayout>
       <div className="mx-auto max-w-7xl space-y-4 lg:space-y-6">
         {/* Zone Header */}
-        <ZoneHeader zoneName={zone.name} zoneId={zone.id} status={zone.status} />
+        <ZoneHeader zoneName={zone.name} zoneId={zone.id} status={zone.status} cropType={cropType} />
 
         {/* Environmental Gauges */}
         <div>

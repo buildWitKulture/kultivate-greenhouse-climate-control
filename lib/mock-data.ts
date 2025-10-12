@@ -25,6 +25,7 @@ export const mockGreenhouseZones: GreenhouseZone[] = [
     humidity: { current: 65, target: 70 },
     co2: { current: 800, target: 1000 },
     light: { current: 250, target: 300, unit: "μmol" },
+    soilMoisture: { current: 55, target: 50, min: 30, max: 70 },
     heating: { status: "on", percentage: 45 },
     ventilation: { status: "on", percentage: 30 },
     irrigation: { status: "off", lastRun: new Date(Date.now() - 3600000) },
@@ -40,6 +41,7 @@ export const mockGreenhouseZones: GreenhouseZone[] = [
     humidity: { current: 72, target: 70 },
     co2: { current: 950, target: 1000 },
     light: { current: 280, target: 300, unit: "μmol" },
+    soilMoisture: { current: 60, target: 50, min: 30, max: 70 },
     heating: { status: "on", percentage: 60 },
     ventilation: { status: "on", percentage: 25 },
     irrigation: { status: "off", lastRun: new Date(Date.now() - 7200000) },
@@ -55,6 +57,7 @@ export const mockGreenhouseZones: GreenhouseZone[] = [
     humidity: { current: 81, target: 70 },
     co2: { current: 750, target: 1000 },
     light: { current: 300, target: 300, unit: "μmol" },
+    soilMoisture: { current: 48, target: 50, min: 30, max: 70 },
     heating: { status: "on", percentage: 100 },
     ventilation: { status: "off", percentage: 0 },
     irrigation: { status: "off", lastRun: new Date(Date.now() - 1800000) },
@@ -70,6 +73,7 @@ export const mockGreenhouseZones: GreenhouseZone[] = [
     humidity: { current: 58, target: 70 },
     co2: { current: 1100, target: 1000 },
     light: { current: 320, target: 300, unit: "μmol" },
+    soilMoisture: { current: 35, target: 50, min: 30, max: 70 },
     heating: { status: "off", percentage: 0 },
     ventilation: { status: "on", percentage: 80 },
     irrigation: { status: "on", lastRun: new Date() },
@@ -85,6 +89,7 @@ export const mockGreenhouseZones: GreenhouseZone[] = [
     humidity: { current: 68, target: 70 },
     co2: { current: 920, target: 1000 },
     light: { current: 290, target: 300, unit: "μmol" },
+    soilMoisture: { current: 52, target: 50, min: 30, max: 70 },
     heating: { status: "on", percentage: 35 },
     ventilation: { status: "on", percentage: 40 },
     irrigation: { status: "off", lastRun: new Date(Date.now() - 5400000) },
@@ -150,4 +155,17 @@ export const generateHistoricalData = (zoneId: string) => {
     co2: generateTimeSeriesData(12, 900, 200),
     light: generateTimeSeriesData(12, 280, 50),
   }
+}
+
+export const zonesCropTypes: Record<string, string> = {
+  "zone-1": "Pepper",
+  "zone-2": "Tomato",
+  "zone-3": "Cucumber",
+  "zone-4": "Lettuce",
+  "zone-5": "Pepper",
+}
+
+// Helper function to get zone by ID
+export function getZoneById(zoneId: string): GreenhouseZone | undefined {
+  return mockGreenhouseZones.find((zone) => zone.id === zoneId)
 }

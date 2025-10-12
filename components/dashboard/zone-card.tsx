@@ -4,14 +4,16 @@ import Link from "next/link"
 import type { GreenhouseZone } from "@/lib/types"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Thermometer, Droplets, Wind, Lightbulb, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Thermometer, Droplets, Wind, Lightbulb, ArrowRight, Sprout, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ZoneCardProps {
   zone: GreenhouseZone
+  cropType?: string
 }
 
-export function ZoneCard({ zone }: ZoneCardProps) {
+export function ZoneCard({ zone, cropType }: ZoneCardProps) {
   const statusColors = {
     active: "bg-primary/10 text-primary border-primary/20",
     warning: "bg-warning/10 text-warning border-warning/20",
@@ -51,27 +53,37 @@ export function ZoneCard({ zone }: ZoneCardProps) {
 
   return (
     <Card className="group relative overflow-hidden transition-all hover:border-primary/50">
-      <Link href={`/zone/${zone.id}`}>
-        <div className="p-6">
-          {/* Header */}
-          <div className="mb-4 flex items-start justify-between">
+      <div className="p-4 sm:p-6">
+        {/* Header */}
+        <div className="mb-4 flex items-start justify-between">
+          <Link href={`/zone/${zone.id}`} className="flex-1">
             <div>
-              <h3 className="text-lg font-semibold">{zone.name}</h3>
-              <p className="text-sm text-muted-foreground">Zone ID: {zone.id}</p>
+              <h3 className="text-base font-semibold sm:text-lg">{zone.name}</h3>
+              <p className="text-xs text-muted-foreground sm:text-sm">Zone ID: {zone.id}</p>
+              {cropType && (
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-500">
+                  <Sprout className="h-3 w-3" />
+                  <span>{cropType}</span>
+                </div>
+              )}
             </div>
-            <Badge className={cn("border", statusColors[zone.status])}>{zone.status}</Badge>
-          </div>
+          </Link>
+          <Badge className={cn("border", statusColors[zone.status])}>{zone.status}</Badge>
+        </div>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-2 gap-4">
+        {/* Metrics Grid */}
+        <Link href={`/zone/${zone.id}`}>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {metrics.map((metric) => (
               <div key={metric.label} className="space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <metric.icon className="h-4 w-4" />
+                  <metric.icon className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs">{metric.label}</span>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className={cn("text-lg font-semibold", metric.status === "warning" && "text-warning")}>
+                <div className="flex items-baseline gap-1 sm:gap-2">
+                  <span
+                    className={cn("text-base font-semibold sm:text-lg", metric.status === "warning" && "text-warning")}
+                  >
                     {metric.value}
                   </span>
                   <span className="text-xs text-muted-foreground">/ {metric.target}</span>
@@ -79,14 +91,23 @@ export function ZoneCard({ zone }: ZoneCardProps) {
               </div>
             ))}
           </div>
+        </Link>
 
-          {/* View Details Link */}
-          <div className="mt-4 flex items-center justify-end gap-2 text-sm text-primary opacity-0 transition-opacity group-hover:opacity-100">
-            <span>View Details</span>
-            <ArrowRight className="h-4 w-4" />
-          </div>
+        <div className="mt-4 flex items-center gap-2">
+          <Link href={`/zone/${zone.id}`} className="flex-1">
+            <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
+              <span>View Details</span>
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
+          <Link href={`/zone/${zone.id}/simulate`}>
+            <Button variant="default" size="sm" className="gap-2">
+              <Play className="h-3 w-3" />
+              <span className="hidden sm:inline">Simulate</span>
+            </Button>
+          </Link>
         </div>
-      </Link>
+      </div>
     </Card>
   )
 }

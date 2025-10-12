@@ -3,7 +3,7 @@ import { StatsOverview } from "@/components/dashboard/stats-overview"
 import { ZoneCard } from "@/components/dashboard/zone-card"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 import { RecentAlerts } from "@/components/dashboard/recent-alerts"
-import { mockGreenhouseZones } from "@/lib/mock-data"
+import { mockGreenhouseZones, zonesCropTypes } from "@/lib/mock-data"
 
 export default function HomePage() {
   return (
@@ -28,7 +28,7 @@ export default function HomePage() {
           <h3 className="mb-3 text-lg font-semibold lg:mb-4 lg:text-xl">All Zones</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
             {mockGreenhouseZones.map((zone) => (
-              <ZoneCard key={zone.id} zone={zone} />
+              <ZoneCard key={zone.id} zone={zone} cropType={zonesCropTypes[zone.id]} />
             ))}
           </div>
         </div>
