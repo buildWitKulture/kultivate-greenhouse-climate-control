@@ -1,224 +1,432 @@
-"use client"
+// components/simulation/simulation-runner.tsx
+"use client";
 
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { useState, useEffect, useRef } from "react"
-import { Play, Square, RotateCcw, Bell, Activity, Zap } from "lucide-react"
-import type { SimulationRun, ActuatorResponse } from "@/lib/types"
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import {
+  Play,
+  Square,
+  Clock,
+  Thermometer,
+  Droplets,
+  Wind,
+  Sprout,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  getScenarioById,
+  calculateActuatorResponse,
+} from "@/lib/simulation-scenarios";
+import {
+  startSimulation,
+  stopSimulation,
+  updateSensorReadings,
+  updateActuators,
+  addSimulationLog,
+  subscribeToSimulation,
+  subscribeToGreenhouse,
+  type GreenhouseData,
+} from "@/lib/firebase-config";
 
 interface SimulationRunnerProps {
-  simulationRun: SimulationRun
-  onComplete: () => void
-  onCancel: () => void
+  zoneId: string;
+  selectedScenario: string;
+  onComplete?: () => void;
 }
 
-export function SimulationRunner({ simulationRun, onComplete, onCancel }: SimulationRunnerProps) {
-  const [timeRemaining, setTimeRemaining] = useState(simulationRun.duration)
-  const [isRunning, setIsRunning] = useState(false)
-  const [activeActuators, setActiveActuators] = useState<ActuatorResponse[]>([])
-  const hasCompletedRef = useRef(false)
+export default function SimulationRunner({
+  zoneId,
+  selectedScenario,
+  onComplete,
+}: SimulationRunnerProps) {
+  const [isRunning, setIsRunning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(10);
+  const [progress, setProgress] = useState(0);
+  const [currentConditions, setCurrentConditions] = useState<
+    GreenhouseData["sensors"] | null
+  >(null);
+  const [activeActuators, setActiveActuators] = useState<
+    GreenhouseData["actuators"] | null
+  >(null);
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const [simulationComplete, setSimulationComplete] = useState(false);
 
-  useEffect(() => {
-    if (timeRemaining === 0 && !isRunning && !hasCompletedRef.current) {
-      hasCompletedRef.current = true
-      onComplete()
-    }
-  }, [timeRemaining, isRunning, onComplete])
+  const scenario = getScenarioById(selectedScenario);
 
+  // Subscribe to Firebase updates
   useEffect(() => {
-    if (!isRunning) return
+    if (!zoneId) return;
+
+    const unsubscribeSimulation = subscribeToSimulation(
+      zoneId,
+      (simulation) => {
+        setIsRunning(simulation.active && simulation.status === "running");
+
+        if (simulation.status === "complete" && simulation.active === false) {
+          setSimulationComplete(true);
+          setTimeRemaining(0);
+          setProgress(100);
+        }
+      }
+    );
+
+    const unsubscribeGreenhouse = subscribeToGreenhouse(zoneId, (data) => {
+      Promise.resolve().then(() => {
+        setCurrentConditions(data.sensors);
+        setActiveActuators(data.actuators);
+      });
+    });
+
+    return () => {
+      unsubscribeSimulation();
+      unsubscribeGreenhouse();
+    };
+  }, [zoneId]);
+
+  // Simulation timer
+  useEffect(() => {
+    if (!isRunning) return;
 
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          setIsRunning(false)
-          return 0
+        if (prev <= 0) {
+          handleSimulationComplete();
+          return 0;
         }
-        return prev - 1
-      })
-    }, 1000)
+        const newTime = prev - 0.1;
+        setProgress(((10 - newTime) / 10) * 100);
+        return newTime;
+      });
+    }, 100);
 
-    return () => clearInterval(interval)
-  }, [isRunning])
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
-  useEffect(() => {
-    if (!isRunning) return
+  const handleStartSimulation = async () => {
+    if (!scenario) return;
 
-    const elapsed = simulationRun.duration - timeRemaining
+    try {
+      // Add notification
+      addNotification(`🚀 Starting ${scenario.name} simulation`);
 
-    // Activate actuators based on their scheduled time
-    const newActiveActuators = simulationRun.actuatorResponses.filter(
-      (response) => response.activatedAt <= elapsed && response.status !== "completed",
-    )
+      // Start simulation in Firebase
+      await startSimulation(zoneId, scenario.id as any);
 
-    setActiveActuators(newActiveActuators)
-  }, [timeRemaining, isRunning, simulationRun])
+      // Update sensor readings to simulation conditions
+      await updateSensorReadings(zoneId, scenario.conditions);
 
-  const handleStart = () => {
-    setIsRunning(true)
-    hasCompletedRef.current = false
-    console.log("[v0] Simulation started:", simulationRun.id)
-    console.log("[v0] Firebase data would be sent:", {
-      zoneId: simulationRun.zoneId,
-      scenarioId: simulationRun.scenarioId,
-      duration: simulationRun.duration,
-    })
+      // Calculate and apply actuator responses
+      const actuatorResponse = calculateActuatorResponse(
+        scenario.conditions.temperature,
+        scenario.conditions.humidity,
+        scenario.conditions.soilMoisture,
+        scenario.conditions.gasLevel
+      );
+      await updateActuators(zoneId, actuatorResponse);
+
+      // Add actuator notifications
+      if (actuatorResponse.fan)
+        addNotification("💨 Ventilation fans activated");
+      if (actuatorResponse.pump)
+        addNotification("💧 Irrigation system started");
+      if (actuatorResponse.heater)
+        addNotification("🔥 Heating system activated");
+      if (actuatorResponse.misting)
+        addNotification("💦 Misting system engaged");
+      if (actuatorResponse.lighting)
+        addNotification("💡 Supplemental lighting on");
+      if (actuatorResponse.co2dosing)
+        addNotification("🌱 CO₂ dosing activated");
+
+      setIsRunning(true);
+      setTimeRemaining(10);
+      setProgress(0);
+      setSimulationComplete(false);
+    } catch (error) {
+      console.error("Failed to start simulation:", error);
+      addNotification("❌ Failed to start simulation");
+    }
+  };
+
+  const handleStopSimulation = async () => {
+    try {
+      await stopSimulation(zoneId);
+
+      // Reset all actuators
+      await updateActuators(zoneId, {
+        fan: false,
+        pump: false,
+        heater: false,
+        misting: false,
+        lighting: false,
+        co2dosing: false,
+      });
+
+      addNotification("⏸️ Simulation stopped manually");
+      setIsRunning(false);
+      setTimeRemaining(10);
+      setProgress(0);
+    } catch (error) {
+      console.error("Failed to stop simulation:", error);
+    }
+  };
+
+  const handleSimulationComplete = async () => {
+    if (!scenario || !currentConditions) return;
+
+    try {
+      // Stop simulation
+      await stopSimulation(zoneId);
+
+      // Reset actuators
+      await updateActuators(zoneId, {
+        fan: false,
+        pump: false,
+        heater: false,
+        misting: false,
+        lighting: false,
+        co2dosing: false,
+      });
+
+      // Log simulation
+      const actuatorActions: string[] = [];
+      if (activeActuators?.fan) actuatorActions.push("Ventilation activated");
+      if (activeActuators?.pump) actuatorActions.push("Irrigation activated");
+      if (activeActuators?.heater) actuatorActions.push("Heating activated");
+      if (activeActuators?.misting) actuatorActions.push("Misting activated");
+      if (activeActuators?.lighting) actuatorActions.push("Lighting activated");
+      if (activeActuators?.co2dosing)
+        actuatorActions.push("CO₂ dosing activated");
+
+      await addSimulationLog(zoneId, {
+        id: `sim_${Date.now()}`,
+        timestamp: Date.now(),
+        type: scenario.id,
+        scenario: scenario.name,
+        duration: 10000,
+        startConditions: scenario.conditions,
+        endConditions: currentConditions,
+        actuatorActions,
+        status: "completed",
+      });
+
+      addNotification("✅ Simulation completed successfully");
+      addNotification("🔄 Returning to normal operation");
+
+      setIsRunning(false);
+      setSimulationComplete(true);
+
+      if (onComplete) onComplete();
+    } catch (error) {
+      console.error("Failed to complete simulation:", error);
+    }
+  };
+
+  const addNotification = useCallback((message: string) => {
+    setNotifications((prev) => [...prev, message]);
+
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n !== message));
+    }, 5000);
+  }, []);
+
+  if (!scenario) {
+    return (
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>Please select a simulation scenario</AlertDescription>
+      </Alert>
+    );
   }
-
-  const handleStop = () => {
-    setIsRunning(false)
-    onCancel()
-  }
-
-  const progress = ((simulationRun.duration - timeRemaining) / simulationRun.duration) * 100
 
   return (
     <div className="space-y-6">
-      {/* Simulation Status */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`rounded-lg p-2 ${isRunning ? "bg-emerald-500/10" : "bg-primary/10"}`}>
-                <Activity className={`h-5 w-5 ${isRunning ? "text-emerald-500" : "text-primary"}`} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Simulation Status</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isRunning ? "Running simulation..." : "Ready to start"}
-                </p>
-              </div>
+      {/* Scenario Overview */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-3xl">{scenario.icon}</span>
+                {scenario.name} Simulation
+              </CardTitle>
+              <CardDescription>{scenario.description}</CardDescription>
             </div>
-            <Badge variant={isRunning ? "default" : "secondary"} className="w-fit">
-              {isRunning ? "Running" : "Pending"}
+            <Badge
+              variant={
+                isRunning
+                  ? "default"
+                  : simulationComplete
+                  ? "outline"
+                  : "secondary"
+              }
+              className="text-lg px-4 py-2"
+            >
+              {isRunning
+                ? "Running"
+                : simulationComplete
+                ? "Complete"
+                : "Ready"}
             </Badge>
           </div>
-
-          {/* Timer Display */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Time Remaining</span>
-              <span className="text-2xl font-bold tabular-nums">{timeRemaining}s</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0s</span>
-              <span>{simulationRun.duration}s</span>
-            </div>
-          </div>
-
-          {/* Control Buttons */}
-          <div className="flex gap-2">
-            {!isRunning ? (
-              <Button onClick={handleStart} className="flex-1 gap-2">
-                <Play className="h-4 w-4" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Simulation Controls */}
+          <div className="flex items-center gap-4">
+            {!isRunning && !simulationComplete && (
+              <Button
+                onClick={handleStartSimulation}
+                size="lg"
+                className="flex-1"
+              >
+                <Play className="mr-2 h-5 w-5" />
                 Start Simulation
               </Button>
-            ) : (
-              <Button onClick={handleStop} variant="destructive" className="flex-1 gap-2">
-                <Square className="h-4 w-4" />
-                Stop Simulation
+            )}
+
+            {isRunning && (
+              <>
+                <Button
+                  onClick={handleStopSimulation}
+                  variant="destructive"
+                  size="lg"
+                  className="flex-1"
+                >
+                  <Square className="mr-2 h-5 w-5" />
+                  Stop Simulation
+                </Button>
+
+                <div className="flex items-center gap-2 px-6 py-3 bg-muted rounded-lg">
+                  <Clock className="h-5 w-5 text-primary" />
+                  <span className="text-2xl font-mono font-bold">
+                    {timeRemaining.toFixed(1)}s
+                  </span>
+                </div>
+              </>
+            )}
+
+            {simulationComplete && (
+              <Button
+                onClick={() => {
+                  setSimulationComplete(false);
+                  setProgress(0);
+                  setTimeRemaining(10);
+                }}
+                size="lg"
+                className="flex-1"
+              >
+                <CheckCircle2 className="mr-2 h-5 w-5" />
+                Run Another Simulation
               </Button>
             )}
-            <Button onClick={onCancel} variant="outline" size="icon" disabled={isRunning}>
-              <RotateCcw className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
+
+          {/* Progress Bar */}
+          {(isRunning || progress > 0) && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Progress</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-3" />
+            </div>
+          )}
+
+          {/* Current Conditions */}
+          {currentConditions && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Thermometer className="h-8 w-8 text-red-500" />
+                <div>
+                  <div className="text-2xl font-bold">
+                    {currentConditions.temperature}°C
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Temperature
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Droplets className="h-8 w-8 text-blue-500" />
+                <div>
+                  <div className="text-2xl font-bold">
+                    {currentConditions.humidity}%
+                  </div>
+                  <div className="text-xs text-muted-foreground">Humidity</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Sprout className="h-8 w-8 text-green-500" />
+                <div>
+                  <div className="text-2xl font-bold">
+                    {currentConditions.soilMoisture}%
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Soil Moisture
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Wind className="h-8 w-8 text-purple-500" />
+                <div>
+                  <div className="text-2xl font-bold">
+                    {currentConditions.gasLevel} ppm
+                  </div>
+                  <div className="text-xs text-muted-foreground">CO₂ Level</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Actuators */}
+          {activeActuators && (
+            <div>
+              <h4 className="font-semibold mb-3">Active Systems</h4>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(activeActuators).map(
+                  ([key, active]) =>
+                    active && (
+                      <Badge key={key} variant="default" className="px-3 py-1">
+                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                      </Badge>
+                    )
+                )}
+                {!Object.values(activeActuators).some((v) => v) && (
+                  <span className="text-sm text-muted-foreground">
+                    No systems active
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* Notifications */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-muted-foreground" />
-            <h4 className="font-semibold">Notifications</h4>
-          </div>
-          <div className="space-y-2">
-            {simulationRun.notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`rounded-lg border p-3 ${
-                  notification.type === "warning"
-                    ? "border-yellow-500/20 bg-yellow-500/10"
-                    : "border-primary/20 bg-primary/5"
-                }`}
-              >
-                <p className="text-sm">{notification.message}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{notification.timestamp.toLocaleTimeString()}</p>
-              </div>
-            ))}
-            {isRunning && (
-              <div className="animate-pulse rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3">
-                <p className="text-sm text-emerald-500">Simulation in progress - Actuators responding...</p>
-              </div>
-            )}
-          </div>
+      {notifications.length > 0 && (
+        <div className="space-y-2">
+          {notifications.map((notification, index) => (
+            <Alert key={index} className="animate-in slide-in-from-right">
+              <AlertDescription>{notification}</AlertDescription>
+            </Alert>
+          ))}
         </div>
-      </Card>
-
-      {/* Actuator Responses */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-muted-foreground" />
-            <h4 className="font-semibold">Actuator Responses</h4>
-          </div>
-
-          <div className="space-y-3">
-            {simulationRun.actuatorResponses.map((response, index) => {
-              const isActive = activeActuators.includes(response)
-              const elapsed = simulationRun.duration - timeRemaining
-              const willActivate = response.activatedAt > elapsed
-
-              return (
-                <div
-                  key={index}
-                  className={`rounded-lg border p-4 transition-all ${
-                    isActive
-                      ? "border-emerald-500 bg-emerald-500/10"
-                      : willActivate
-                        ? "border-muted bg-muted/50"
-                        : "border-muted"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h5 className="font-semibold">{response.actuator}</h5>
-                        {isActive && (
-                          <Badge variant="default" className="text-xs">
-                            Active
-                          </Badge>
-                        )}
-                        {willActivate && (
-                          <Badge variant="outline" className="text-xs">
-                            Pending
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{response.action}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Trigger: {response.trigger}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{response.intensity}%</p>
-                      <p className="text-xs text-muted-foreground">at {response.activatedAt}s</p>
-                    </div>
-                  </div>
-                  {isActive && (
-                    <div className="mt-3">
-                      <Progress value={response.intensity} className="h-1.5" />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </Card>
+      )}
     </div>
-  )
+  );
 }

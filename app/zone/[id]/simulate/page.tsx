@@ -1,116 +1,167 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, CheckCircle } from "lucide-react"
-import { ScenarioSelector } from "@/components/simulation/scenario-selector"
-import { SimulationRunner } from "@/components/simulation/simulation-runner"
-import { getZoneById } from "@/lib/mock-data"
-import { createSimulationRun } from "@/lib/simulation-runner"
-import type { SimulationScenario, SimulationRun } from "@/lib/types"
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Zap } from "lucide-react";
+import ScenarioSelector from "@/components/simulation/scenario-selector";
+import SimulationRunner from "@/components/simulation/simulation-runner";
+import {
+  subscribeToGreenhouse,
+  type GreenhouseData,
+} from "@/lib/firebase-config";
 
-export default function SimulatePage() {
-  const params = useParams()
-  const router = useRouter()
-  const zoneId = params.id as string
-  const zone = getZoneById(zoneId)
+interface SimulatePageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
 
-  const [selectedScenario, setSelectedScenario] = useState<SimulationScenario | null>(null)
-  const [simulationRun, setSimulationRun] = useState<SimulationRun | null>(null)
-  const [isComplete, setIsComplete] = useState(false)
+export default function SimulatePage({ params }: SimulatePageProps) {
+  const router = useRouter();
+  const [step, setStep] = useState<"select" | "run">("select");
+  const [selectedScenario, setSelectedScenario] = useState<string>("");
+  const [greenhouseData, setGreenhouseData] = useState<GreenhouseData | null>(
+    null
+  );
+  const unwrappedParams = use(params);
+  const zoneId = unwrappedParams.id;
 
-  if (!zone) {
-    return <div>Zone not found</div>
-  }
+  // Subscribe to greenhouse data
+  useEffect(() => {
+    if (!zoneId) return;
 
-  const cropType = zone.name.includes("1") ? "pepper" : "tomato"
+    const unsubscribe = subscribeToGreenhouse(zoneId, (data) => {
+      Promise.resolve().then(() => setGreenhouseData(data)); // ✅ safe async update
+    });
 
-  const handleSelectScenario = (scenario: SimulationScenario) => {
-    setSelectedScenario(scenario)
-    setSimulationRun(null)
-    setIsComplete(false)
-  }
+    return () => unsubscribe();
+  }, [zoneId]);
+
+  const handleScenarioSelect = (scenarioId: string) => {
+    setSelectedScenario(scenarioId);
+  };
 
   const handleStartSimulation = () => {
-    if (!selectedScenario) return
-    const run = createSimulationRun(zone, selectedScenario, cropType)
-    setSimulationRun(run)
-  }
+    if (selectedScenario) {
+      setStep("run");
+    }
+  };
 
-  const handleComplete = () => {
-    setIsComplete(true)
-    console.log("[v0] Simulation completed successfully")
-    console.log("[v0] Returning to normal operation")
-  }
+  const handleSimulationComplete = () => {
+    // Can add additional logic here if needed
+    console.log("Simulation completed");
+  };
 
-  const handleCancel = () => {
-    setSimulationRun(null)
-    setSelectedScenario(null)
-    setIsComplete(false)
-  }
-
-  const handleReset = () => {
-    setSimulationRun(null)
-    setSelectedScenario(null)
-    setIsComplete(false)
-  }
+  const handleBackToSelection = () => {
+    setStep("select");
+    setSelectedScenario("");
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div>
-            <Button variant="ghost" onClick={() => router.back()} className="mb-2 gap-2 px-0">
-              <ArrowLeft className="h-4 w-4" />
-              Back to {zone.name}
-            </Button>
-            <h1 className="text-2xl font-bold sm:text-3xl">Climate Simulation</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Test control system response to various climate scenarios
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Zap className="h-8 w-8 text-primary" />
+              Climate Simulation
+            </h1>
+            <p className="text-muted-foreground">
+              Zone {zoneId} - Test system response to extreme conditions
             </p>
           </div>
         </div>
 
-        {/* Completion Message */}
-        {isComplete && (
-          <div className="rounded-lg border border-emerald-500 bg-emerald-500/10 p-6">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-6 w-6 text-emerald-500" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-emerald-500">Simulation Complete</h3>
-                <p className="text-sm text-emerald-500/80">
-                  Control system has successfully responded to simulated conditions. Normal operation resumed.
-                </p>
-              </div>
-              <Button onClick={handleReset} variant="outline">
-                Run Another
-              </Button>
-            </div>
-          </div>
+        {step === "run" && (
+          <Button variant="outline" onClick={handleBackToSelection}>
+            Change Scenario
+          </Button>
         )}
+      </div>
 
-        {/* Scenario Selection */}
-        {!simulationRun && !isComplete && (
-          <>
-            <ScenarioSelector onSelectScenario={handleSelectScenario} selectedScenarioId={selectedScenario?.id} />
+      {/* Current Status Alert */}
+      {greenhouseData && !greenhouseData.simulation.active && (
+        <Alert>
+          <AlertDescription>
+            System is in normal operation mode. Temperature:{" "}
+            {greenhouseData.sensors.temperature}°C, Humidity:{" "}
+            {greenhouseData.sensors.humidity}%, Soil Moisture:{" "}
+            {greenhouseData.sensors.soilMoisture}%
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Main Content */}
+      {step === "select" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 1: Choose Simulation Scenario</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ScenarioSelector
+              onSelect={handleScenarioSelect}
+              selectedScenario={selectedScenario}
+            />
 
             {selectedScenario && (
-              <div className="flex justify-center">
-                <Button onClick={handleStartSimulation} size="lg" className="gap-2">
-                  Prepare Simulation
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  size="lg"
+                  onClick={handleStartSimulation}
+                  className="min-w-[200px]"
+                >
+                  Continue to Simulation
+                  <ArrowLeft className="ml-2 h-5 w-5 rotate-180" />
                 </Button>
               </div>
             )}
-          </>
-        )}
+          </CardContent>
+        </Card>
+      ) : (
+        <SimulationRunner
+          zoneId={zoneId}
+          selectedScenario={selectedScenario}
+          onComplete={handleSimulationComplete}
+        />
+      )}
 
-        {/* Simulation Runner */}
-        {simulationRun && !isComplete && (
-          <SimulationRunner simulationRun={simulationRun} onComplete={handleComplete} onCancel={handleCancel} />
-        )}
-      </div>
+      {/* Information Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>How Simulation Works</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <div>
+              <h4 className="font-semibold mb-2">Simulation Process:</h4>
+              <ol className="space-y-1 text-muted-foreground">
+                <li>1. Select a climate scenario</li>
+                <li>2. Review expected system responses</li>
+                <li>3. Start 10-second simulation</li>
+                <li>4. Monitor real-time actuator responses</li>
+                <li>5. System returns to normal operation</li>
+              </ol>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Safety Features:</h4>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Fixed 10-second duration</li>
+                <li>• Manual stop capability</li>
+                <li>• Automatic return to normal</li>
+                <li>• Complete activity logging</li>
+                <li>• ESP32 synchronized control</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }
