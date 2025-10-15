@@ -1,13 +1,28 @@
+"use client"
+
 import { AppLayout } from "@/components/layout/app-layout"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TimeSeriesChart } from "@/components/charts/time-series-chart"
-import { mockGreenhouseZones, generateHistoricalData } from "@/lib/mock-data"
-import { TrendingUp, TrendingDown, Activity, AlertCircle } from "lucide-react"
+import { useGreenhouseZones, useHistoricalData } from "@/lib/firebase-hooks"
+import { TrendingUp, TrendingDown, Activity, AlertCircle, Loader2 } from "lucide-react"
 
 export default function AnalyticsPage() {
-  const zone1Data = generateHistoricalData("zone-1")
-  const zone2Data = generateHistoricalData("zone-2")
+  const { zones, loading: zonesLoading } = useGreenhouseZones()
+  const { data: zone1Data, loading: zone1Loading } = useHistoricalData("zone-1")
+  const { data: zone2Data, loading: zone2Loading } = useHistoricalData("zone-2")
+
+  const loading = zonesLoading || zone1Loading || zone2Loading
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    )
+  }
 
   const insights = [
     {
@@ -140,7 +155,7 @@ export default function AnalyticsPage() {
         <Card className="p-4 lg:p-6">
           <h3 className="mb-3 text-base font-semibold lg:mb-4 lg:text-lg">Zone Performance Summary</h3>
           <div className="space-y-3 lg:space-y-4">
-            {mockGreenhouseZones.map((zone) => (
+            {zones.map((zone) => (
               <div
                 key={zone.id}
                 className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between lg:p-4"

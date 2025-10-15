@@ -1,15 +1,24 @@
 "use client"
 
 import { TimeSeriesChart } from "@/components/charts/time-series-chart"
-import { generateHistoricalData } from "@/lib/mock-data"
+import { useHistoricalData } from "@/lib/firebase-hooks"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2 } from "lucide-react"
 
 interface ZoneAnalyticsProps {
   zoneId: string
 }
 
 export function ZoneAnalytics({ zoneId }: ZoneAnalyticsProps) {
-  const historicalData = generateHistoricalData(zoneId)
+  const { data: historicalData, loading } = useHistoricalData(zoneId)
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -30,7 +39,7 @@ export function ZoneAnalytics({ zoneId }: ZoneAnalyticsProps) {
           data={[
             {
               name: "Temperature (°C)",
-              data: historicalData.temperature,
+              data: historicalData?.temperature,
               color: "#f59e0b",
             },
           ]}
@@ -44,7 +53,7 @@ export function ZoneAnalytics({ zoneId }: ZoneAnalyticsProps) {
             data={[
               {
                 name: "Humidity (%)",
-                data: historicalData.humidity,
+                data: historicalData?.humidity,
                 color: "#0ea5e9",
               },
             ]}
@@ -57,7 +66,7 @@ export function ZoneAnalytics({ zoneId }: ZoneAnalyticsProps) {
             data={[
               {
                 name: "CO₂ (ppm)",
-                data: historicalData.co2,
+                data: historicalData?.co2,
                 color: "#10b981",
               },
             ]}
@@ -71,7 +80,7 @@ export function ZoneAnalytics({ zoneId }: ZoneAnalyticsProps) {
           data={[
             {
               name: "Light (μmol)",
-              data: historicalData.light,
+              data: historicalData?.light,
               color: "#f59e0b",
             },
           ]}

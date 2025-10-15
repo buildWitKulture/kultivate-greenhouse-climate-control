@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Cloud, Settings, BarChart3, Leaf, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { mockGreenhouseZones } from "@/lib/mock-data"
+import { useGreenhouseZones } from "@/lib/firebase-hooks"
 import { Button } from "@/components/ui/button"
 
 const navigation = [
@@ -21,6 +21,7 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { zones, loading } = useGreenhouseZones()
 
   return (
     <>
@@ -71,31 +72,37 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             <div className="pt-6">
               <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Zones</h3>
               <div className="space-y-1">
-                {mockGreenhouseZones.map((zone) => {
-                  const isActive = pathname === `/zone/${zone.id}`
-                  return (
-                    <Link
-                      key={zone.id}
-                      href={`/zone/${zone.id}`}
-                      className={cn(
-                        "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      <span>{zone.name}</span>
-                      <span
+                {loading ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">Loading zones...</div>
+                ) : zones.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No zones available</div>
+                ) : (
+                  zones.map((zone) => {
+                    const isActive = pathname === `/zone/${zone.id}`
+                    return (
+                      <Link
+                        key={zone.id}
+                        href={`/zone/${zone.id}`}
                         className={cn(
-                          "h-2 w-2 rounded-full",
-                          zone.status === "active" && "bg-primary",
-                          zone.status === "warning" && "bg-warning",
-                          zone.status === "offline" && "bg-destructive",
+                          "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
                         )}
-                      />
-                    </Link>
-                  )
-                })}
+                      >
+                        <span>{zone.name}</span>
+                        <span
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            zone.status === "active" && "bg-primary",
+                            zone.status === "warning" && "bg-warning",
+                            zone.status === "offline" && "bg-destructive",
+                          )}
+                        />
+                      </Link>
+                    )
+                  })
+                )}
               </div>
             </div>
           </nav>

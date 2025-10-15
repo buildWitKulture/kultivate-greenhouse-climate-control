@@ -1,12 +1,26 @@
+"use client"
+
 import { AppLayout } from "@/components/layout/app-layout"
 import { SimulationControlPanel } from "@/components/simulation/simulation-control-panel"
 import { ParameterEditor } from "@/components/simulation/parameter-editor"
-import { mockGreenhouseZones } from "@/lib/mock-data"
+import { useGreenhouseZones } from "@/lib/firebase-hooks"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, CheckCircle2, Info } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Info, Loader2 } from "lucide-react"
 
 export default function ManualOverridePage() {
+  const { zones, loading } = useGreenhouseZones()
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    )
+  }
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-7xl space-y-4 lg:space-y-6">
@@ -38,7 +52,7 @@ export default function ManualOverridePage() {
         <div>
           <h3 className="mb-3 text-lg font-semibold lg:mb-4 lg:text-xl">Zone Controls</h3>
           <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-            {mockGreenhouseZones.slice(0, 4).map((zone) => (
+            {zones.slice(0, 4).map((zone) => (
               <div key={zone.id} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold lg:text-base">{zone.name}</h4>

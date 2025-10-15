@@ -8,9 +8,9 @@ If you just want to test the web interface without hardware:
 
 ### 1. Install Dependencies
 
-```bash
+\`\`\`bash
 npm install firebase
-```
+\`\`\`
 
 ### 2. Create Firebase Project
 
@@ -21,7 +21,7 @@ npm install firebase
 
 ### 3. Configure Environment
 
-```bash
+\`\`\`bash
 # Create .env.local file
 NEXT_PUBLIC_FIREBASE_API_KEY=your_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
@@ -30,13 +30,13 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_bucket
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-```
+\`\`\`
 
 ### 4. Initialize Database
 
 Copy this to Firebase Console → Realtime Database → Data:
 
-```json
+\`\`\`json
 {
   "greenhouses": {
     "zone1": {
@@ -68,7 +68,7 @@ Copy this to Firebase Console → Realtime Database → Data:
     }
   }
 }
-```
+\`\`\`
 
 ### 5. Add Required Files
 
@@ -84,15 +84,15 @@ Copy these files from the artifacts:
 
 ### 6. Run Development Server
 
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 ### 7. Test Simulation
 
-```
+\`\`\`
 Navigate to: http://localhost:3000/zone/zone1/simulate
-```
+\`\`\`
 
 ## 🔥 Full Setup (Web App + ESP32)
 
@@ -109,7 +109,7 @@ Navigate to: http://localhost:3000/zone/zone1/simulate
 
 ### Wiring Diagram
 
-```
+\`\`\`
 ESP32 Pinout:
 ┌─────────────────────────────────────┐
 │                                     │
@@ -135,13 +135,13 @@ Soil:        VCC → 3.3V, SIG → GPIO34, GND → GND
 Gas(MQ135):  VCC → 5V, A0 → GPIO35, GND → GND
 
 Relay Module: Each relay IN connected to respective GPIO
-```
+\`\`\`
 
 ### Flash ESP32 Firmware
 
 #### Option A: Using PlatformIO (Recommended)
 
-```bash
+\`\`\`bash
 # Install PlatformIO
 pip install platformio
 
@@ -166,11 +166,11 @@ pio run --target upload
 
 # Monitor
 pio device monitor
-```
+\`\`\`
 
 #### Option B: Using Arduino IDE
 
-```bash
+\`\`\`bash
 1. Install Arduino IDE
 2. Add ESP32 board manager URL:
    https://dl.espressif.com/dl/package_esp32_index.json
@@ -182,13 +182,13 @@ pio device monitor
 5. Copy main.cpp content to Arduino sketch
 6. Select board: ESP32 Dev Module
 7. Upload
-```
+\`\`\`
 
 ## 🎯 Testing Workflow
 
 ### Step 1: Verify ESP32 Connection
 
-```bash
+\`\`\`bash
 # Open serial monitor (115200 baud)
 # You should see:
 Connecting to WiFi....
@@ -201,7 +201,7 @@ Temperature: 25.3 °C
 Humidity: 62.1 %
 Soil Moisture: 48 %
 Gas Level: 395 ppm
-```
+\`\`\`
 
 ### Step 2: Test Web Interface
 
@@ -235,7 +235,7 @@ Gas Level: 395 ppm
 
 ### ESP32 Won't Connect to WiFi
 
-```cpp
+\`\`\`cpp
 // Try different WiFi settings
 WiFi.mode(WIFI_STA);
 WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -247,11 +247,11 @@ while (WiFi.status() != WL_CONNECTED && attempts < 20) {
   Serial.print(".");
   attempts++;
 }
-```
+\`\`\`
 
 ### Firebase Authentication Fails
 
-```
+\`\`\`
 Error: "Permission Denied"
 Solution: Update Firebase Rules to allow read/write:
 {
@@ -260,22 +260,22 @@ Solution: Update Firebase Rules to allow read/write:
     ".write": true
   }
 }
-```
+\`\`\`
 
 ### Sensors Reading Zero/NaN
 
-```
+\`\`\`
 1. Check wiring connections
 2. Verify power supply (3.3V for DHT22)
 3. Test sensor individually:
    float temp = dht.readTemperature();
    Serial.println(temp);
 4. Try different GPIO pins if needed
-```
+\`\`\`
 
 ### Actuators Not Responding
 
-```
+\`\`\`
 1. Check relay trigger level (some need LOW to activate)
 2. Test with simple code:
    digitalWrite(FAN_PIN, HIGH);
@@ -283,17 +283,17 @@ Solution: Update Firebase Rules to allow read/write:
    digitalWrite(FAN_PIN, LOW);
 3. Verify relay power supply (usually 5V)
 4. Check relay module LED indicators
-```
+\`\`\`
 
 ### Web App Can't Start Simulation
 
-```
+\`\`\`
 1. Check browser console for errors
 2. Verify Firebase config in .env.local
 3. Check database structure matches schema
 4. Try clearing browser cache
 5. Check Network tab for failed requests
-```
+\`\`\`
 
 ## 📊 Verify Everything Works
 
@@ -315,7 +315,7 @@ Solution: Update Firebase Rules to allow read/write:
 
 ### Expected Serial Output During Simulation
 
-```
+\`\`\`
 --- Sensor Readings ---
 Temperature: 25.3 °C
 Humidity: 62.1 %
@@ -338,7 +338,7 @@ Temperature: 25.4 °C
 Humidity: 61.8 %
 Soil Moisture: 48 %
 Gas Level: 398 ppm
-```
+\`\`\`
 
 ## 🎉 Next Steps
 
@@ -346,29 +346,29 @@ Once everything works:
 
 1. **Add More Zones**
 
-   ```json
+   \`\`\`json
    "greenhouses": {
      "zone1": { ... },
      "zone2": { ... },
      "zone3": { ... }
    }
-   ```
+   \`\`\`
 
 2. **Customize Scenarios**
    Edit `lib/simulation-scenarios.ts` to add your own
 
 3. **Add Authentication**
 
-   ```bash
+   \`\`\`bash
    npm install firebase-auth
-   ```
+   \`\`\`
 
 4. **Deploy to Production**
 
-   ```bash
+   \`\`\`bash
    npm run build
    vercel deploy
-   ```
+   \`\`\`
 
 5. **Mobile App**
    Consider React Native or Flutter for mobile access

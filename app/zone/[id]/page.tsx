@@ -1,23 +1,44 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { AppLayout } from "@/components/layout/app-layout"
 import { ZoneHeader } from "@/components/zone/zone-header"
 import { EnvironmentalGauge } from "@/components/zone/environmental-gauge"
 import { ControlCard } from "@/components/zone/control-card"
 import { ClimateStrategy } from "@/components/zone/climate-strategy"
 import { ZoneAnalytics } from "@/components/zone/zone-analytics"
-import { mockGreenhouseZones, zonesCropTypes } from "@/lib/mock-data"
+import { useGreenhouseZone, useCropTypes } from "@/lib/firebase-hooks"
 import { notFound } from "next/navigation"
-import { Thermometer, Droplets, Wind, Lightbulb, Flame, Fan, Droplet, Sun, Blinds, Sprout } from "lucide-react"
+import { Thermometer, Droplets, Wind, Lightbulb, Flame, Fan, Droplet, Sun, Blinds, Sprout, Loader2 } from "lucide-react"
 
-export default function ZoneDetailPage({ params }: { params: { id: string } }) {
-  const zone = mockGreenhouseZones.find((z) => z.id === params.id)
+export default function ZoneDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const [zoneId, setZoneId] = useState<string | null>(null)
+
+  useEffect(() => {
+    params.then((p) => setZoneId(p.id))
+  }, [params])
+
+  const { zone, loading: zoneLoading } = useGreenhouseZone(zoneId || "")
+  const { cropTypes, loading: cropTypesLoading } = useCropTypes()
+
+  const loading = zoneLoading || cropTypesLoading || !zoneId
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    )
+  }
 
   if (!zone) {
     notFound()
   }
 
-  const cropType = zonesCropTypes[zone.id]
+  const cropType = cropTypes[zone.id]
 
-  // Determine status for each metric
   const tempStatus =
     Math.abs(zone.temperature.current - zone.temperature.target) > 3
       ? "critical"

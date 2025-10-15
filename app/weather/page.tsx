@@ -1,10 +1,25 @@
+"use client"
+
 import { AppLayout } from "@/components/layout/app-layout"
 import { WeatherOverview } from "@/components/weather/weather-overview"
 import { WeatherScenarios } from "@/components/weather/weather-scenarios"
-import { mockWeatherData } from "@/lib/mock-data"
+import { useWeatherData } from "@/lib/firebase-hooks"
+import { Loader2 } from "lucide-react"
 
 export default function WeatherPage() {
-  const currentWeather = mockWeatherData[mockWeatherData.length - 1]
+  const { weatherData, loading } = useWeatherData()
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    )
+  }
+
+  const currentWeather = weatherData[weatherData.length - 1]
 
   return (
     <AppLayout>
@@ -18,7 +33,7 @@ export default function WeatherPage() {
         </div>
 
         {/* Current Weather */}
-        <WeatherOverview currentWeather={currentWeather} />
+        {currentWeather && <WeatherOverview currentWeather={currentWeather} />}
 
         {/* Weather Scenarios and Charts */}
         <WeatherScenarios />
