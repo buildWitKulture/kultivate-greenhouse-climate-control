@@ -1,61 +1,69 @@
 import { ref, set } from "firebase/database"
 import { database } from "./firebase"
-import { mockGreenhouseZones, mockWeatherData, zonesCropTypes, generateHistoricalData } from "./mock-data"
+import type { GreenhouseData } from "./types"
 
-// Initialize Firebase with mock data (run this once to seed the database)
 export async function initializeFirebaseData() {
   try {
-    // Initialize zones
-    const zonesData: Record<string, any> = {}
-    mockGreenhouseZones.forEach((zone) => {
-      zonesData[zone.id] = {
-        ...zone,
-        irrigation: {
-          ...zone.irrigation,
-          lastRun: zone.irrigation.lastRun.toISOString(),
+    const greenhouseData: Record<string, GreenhouseData> = {
+      "greenhouse-1": {
+        id: "greenhouse-1",
+        name: "Greenhouse 1",
+        mode: "normal",
+        sensors: {
+          temperature: 24,
+          humidity: 65,
+          soilMoisture: 50,
+          gasLevel: 400,
+          lastUpdate: Date.now(),
         },
-      }
-    })
-    await set(ref(database, "zones"), zonesData)
-
-    // Initialize weather data
-    const weatherData: Record<string, any> = {}
-    mockWeatherData.forEach((weather, index) => {
-      weatherData[`weather-${index}`] = {
-        ...weather,
-        timestamp: weather.timestamp.toISOString(),
-      }
-    })
-    await set(ref(database, "weather"), weatherData)
-
-    // Initialize crop types
-    await set(ref(database, "cropTypes"), zonesCropTypes)
-
-    // Initialize historical data for each zone
-    for (const zone of mockGreenhouseZones) {
-      const historicalData = generateHistoricalData(zone.id)
-      const historicalFormatted = {
-        temperature: historicalData.temperature.map((item, index) => ({
-          timestamp: item.timestamp.toISOString(),
-          value: item.value,
-        })),
-        humidity: historicalData.humidity.map((item, index) => ({
-          timestamp: item.timestamp.toISOString(),
-          value: item.value,
-        })),
-        co2: historicalData.co2.map((item, index) => ({
-          timestamp: item.timestamp.toISOString(),
-          value: item.value,
-        })),
-        light: historicalData.light.map((item, index) => ({
-          timestamp: item.timestamp.toISOString(),
-          value: item.value,
-        })),
-      }
-      await set(ref(database, `historical/${zone.id}`), historicalFormatted)
+        normalMode: {
+          enabled: true,
+          parameters: {
+            targetTempMin: 20,
+            targetTempMax: 30,
+            targetHumidityMin: 50,
+            targetHumidityMax: 70,
+            targetSoilMoistureMin: 40,
+            targetSoilMoistureMax: 60,
+          },
+          actuatorStates: {
+            fan: false,
+            pump: false,
+            heater: false,
+            misting: false,
+            lighting: false,
+            co2dosing: false,
+          },
+        },
+        simulation: {
+          active: false,
+          type: "none",
+          startTime: 0,
+          duration: 10,
+          status: "idle",
+          conditions: {
+            temperature: 0,
+            humidity: 0,
+            soilMoisture: 0,
+            gasLevel: 0,
+          },
+          actuatorStates: {
+            fan: false,
+            pump: false,
+            heater: false,
+            misting: false,
+            lighting: false,
+            co2dosing: false,
+          },
+        },
+        logs: {
+          simulationLogs: [],
+        },
+      },
     }
 
-    console.log("[v0] Firebase initialized successfully with mock data")
+    await set(ref(database, "greenhouses"), greenhouseData)
+    console.log("[v0] Firebase initialized successfully with simplified data")
     return { success: true }
   } catch (error) {
     console.error("[v0] Error initializing Firebase:", error)
