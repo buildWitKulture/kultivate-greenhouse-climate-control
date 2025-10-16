@@ -17,6 +17,7 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { greenhouses, loading } = useGreenhouses();
+  const date = new Date();
 
   return (
     <>
@@ -116,9 +117,14 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           </nav>
 
           <div className="border-t border-border p-4">
-            <div className="text-xs text-muted-foreground">
-              <div className="font-medium">System Status</div>
-              <div className="mt-1">All systems operational</div>
+            <div className="text-xs flex flex-col justify-center items-center text-muted-foreground">
+              <p className="font-medium">All systems operational</p>
+
+              <p className="mt-1">
+                Copyright{" "}
+                <span className="text-emerald-400 font-bold">Marvel</span> @
+                {date.getFullYear()}
+              </p>
             </div>
           </div>
         </div>
