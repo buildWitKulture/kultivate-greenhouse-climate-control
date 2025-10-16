@@ -57,8 +57,8 @@ export default function GreenhousePage({
 
   const actuators =
     greenhouse.mode === "simulation"
-      ? greenhouse.simulation.actuatorStates
-      : greenhouse.normalMode.actuatorStates;
+      ? greenhouse.simulation?.actuatorStates
+      : greenhouse.normalMode?.actuatorStates;
 
   return (
     <AppLayout>
@@ -127,7 +127,7 @@ export default function GreenhousePage({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {greenhouse.sensors.soilMoisture}%
+                {greenhouse.sensors?.soilMoisture}%
               </div>
               <p className="text-xs text-muted-foreground">
                 Target:{" "}
@@ -165,32 +165,32 @@ export default function GreenhousePage({
               <ActuatorStatus
                 icon={Fan}
                 label="Ventilation Fan"
-                active={actuators.fan}
+                active={actuators?.fan}
               />
               <ActuatorStatus
                 icon={Droplet}
                 label="Irrigation Pump"
-                active={actuators.pump}
+                active={actuators?.pump}
               />
               <ActuatorStatus
                 icon={Flame}
                 label="Heater"
-                active={actuators.heater}
+                active={actuators?.heater}
               />
               <ActuatorStatus
                 icon={CloudRain}
                 label="Misting System"
-                active={actuators.misting}
+                active={actuators?.misting}
               />
               <ActuatorStatus
                 icon={Lightbulb}
                 label="Grow Lights"
-                active={actuators.lighting}
+                active={actuators?.lighting}
               />
               <ActuatorStatus
                 icon={Co2Icon}
                 label="CO₂ Dosing"
-                active={actuators.co2dosing}
+                active={actuators?.co2dosing}
               />
             </div>
           </CardContent>
