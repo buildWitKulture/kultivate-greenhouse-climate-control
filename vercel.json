@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "regions": ["iad1", "sfo1", "cdg1", "sin1", "hnd1"],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/$1" }
-  ]
+  "regions": ["sin1"],
+  "rewrites": [{ "source": "/(.*)", "destination": "/$1" }]
 }
